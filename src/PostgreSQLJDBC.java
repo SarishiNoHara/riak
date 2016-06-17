@@ -21,34 +21,45 @@ public class PostgreSQLJDBC {
         stmt = c.createStatement();
         String query1 = "SELECT m.idmovies, m.title, m.year, m.type, ak.location, count(s.idmovies) AS number FROM movies m FULL JOIN aka_titles ak ON ak.idmovies=m.idmovies\n" +
                 "FULL JOIN series s ON s.idmovies=m.idmovies GROUP BY m.idmovies, m.title, m.year, m.type, ak.location ORDER BY m.idmovies, m.year;";
-        String query2 = "SELECT * FROM actors WHERE idactors>=1 AND idactors<=5 ORDER BY idactors ";
-        
+        String query2 = "SELECT DISTINCT a.idactors,a.lname, a.fname, a.gender, m.title,m.year From actors a JOIN acted_in ai  ON ai.idactors=a.idactors JOIN movies m ON ai.idmovies=m.idmovies WHERE a.idactors>=1 AND a.idactors<=5 ORDER BY a.idactors, m.year;";
 
-
+        String query3 = "";
 
         ResultSet rs = stmt.executeQuery(query2);
 
         Convertor a = new Convertor();
-        JSONArray movies = a.convertResultSetIntoJSON(rs);
+        JSONArray array = a.convertResultSetIntoJSON(rs);
 
-          System.out.println(movies);
-         System.out.println("kkk");
+        System.out.println(array);
+        System.out.println("kkk");
 
         RiakClient client = RiakClient.newClient(10027, "127.0.0.1");
 
-        for (int i = 0; i < 5; i++) {
-            JSONObject rec = movies.getJSONObject(i);
+        String OldStr = "";
+        for (int i = 0; i < 13; i++) {
 
-            Location location = new Location(new Namespace("Query1"), rec.getString("idactors"));
-            Location location1 = new Location(new Namespace("Query1"), rec.getString("fname"));
+            JSONObject m1 = array.getJSONObject(i);
+            System.out.println(m1);
 
-            String loc = rec.toString(i);
+            if (i == 0) {
+                OldStr = m1.toString(i);
+            } else {
+                JSONObject m2 = array.getJSONObject(i - 1);
+                if (m1.getInt("idactors") == m2.getInt("idactors")) {
+                    String newStr = m1.toString(i);
+                    OldStr = OldStr + "\n" + newStr;
+                } else {
+                    OldStr = m1.toString(i);
+                }
+                Location location = new Location(new Namespace("Query1"), m1.getString("idactors"));
+                Location location1 = new Location(new Namespace("Query1"), m1.getString("fname"));
 
-            StoreValue sv_id = new StoreValue.Builder(loc).withLocation(location).build();
-            StoreValue sv_title = new StoreValue.Builder(loc).withLocation(location1).build();
+                StoreValue sv_id = new StoreValue.Builder(OldStr).withLocation(location).build();
+                StoreValue sv_title = new StoreValue.Builder(OldStr).withLocation(location1).build();
 
-            StoreValue.Response svResponse = client.execute(sv_id);
-            StoreValue.Response svResponse1 = client.execute(sv_title);
+                StoreValue.Response svResponse = client.execute(sv_id);
+                StoreValue.Response svResponse1 = client.execute(sv_title);
+            }
         }
             client.shutdown();
             rs.close();
@@ -57,4 +68,6 @@ public class PostgreSQLJDBC {
 
         }
     }
+
+
 
