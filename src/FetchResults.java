@@ -6,7 +6,7 @@ import com.basho.riak.client.core.query.Namespace;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 
-public class FetchString {
+public class FetchResults {
     public static void main(String [] args) throws UnknownHostException, ExecutionException, InterruptedException {
 
         RiakClient client = RiakClient.newClient(10027, "127.0.0.1");
